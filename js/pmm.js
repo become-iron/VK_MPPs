@@ -3,11 +3,12 @@ var selGroups = '#groups',
     inpOwner = '#groupID',
     btnExec = 'input#execute',
     selFilter = '#filter',
-    tblPosts = "#posts",
+    divPosts = "#posts",
     inpCount = '#count',
     inpCountOut = '#countOut',
     inpOffset = '#offset',
-    selSort = '#sort';
+    selSort = '#sort',
+    chbIsContent = '#isContent';
 
 var reLink = /([-a-zA-Z0-9@:%_\+.~#?&\/\/=]{2,256}\.[a-z]{2,4}\b(\/?[-a-zA-Z0-9@:%_\+.~#?&\/\/=]*)?)/gi;  // CHECK
 
@@ -109,7 +110,9 @@ $(btnExec).click(function() {
         );
     }
     else {
-        var params = (id.length > 0) ? {owner_id: id, count: count, filter: filter, offset: offset} : {domain: domain, count: count, filter: filter, offset: offset};
+        var params = (id.length > 0)
+            ? {owner_id: id, count: count, filter: filter, offset: offset}
+            : {domain: domain, count: count, filter: filter, offset: offset};
         VK.api(
             'wall.get',
             params,
@@ -124,10 +127,11 @@ $(btnExec).click(function() {
 function displayPosts(posts) {
     // ВЫВОД ПОСТОВ
     var countOut = Number($(inpCountOut).val()),
-        typeOfSort = $(selSort).val();  // вид сортировки
+        typeOfSort = $(selSort).val(),  // вид сортировки
+        isContent = $(chbIsContent).prop("checked");
     console.log('Записи: ', posts);
     if (isError(posts)) return;
-    $(tblPosts).empty();
+    $(divPosts).empty();
     if (posts.length == 0) {
         alert('Записей не найдено');
         return;
@@ -140,21 +144,22 @@ function displayPosts(posts) {
     }
     // сортировка записей
     if (typeOfSort == 'byLikes') {
-        posts.sort(sortRevByLikes);
+        posts.sort(sort_RevByLikes);
     }
     else if (typeOfSort == 'byReposts'){
-        posts.sort(sortRevByReposts);
+        posts.sort(sort_RevByReposts);
     }
     else if (typeOfSort == 'bySpeed') {
-        posts.sort(sortRevBySpeed);
+        posts.sort(sort_RevBySpeed);
     }
     // выборка записей
     posts = posts.slice(0, countOut);
     console.log('На вывод: ', posts);
     var code = '';
     for (var j = 0; j < posts.length; j++) {
+        var post = posts[j];
         // составление даты записи
-        var date = new Date(posts[j].date * 1000),
+        var date = new Date(post.date * 1000),
             minutes = (String(date.getMinutes()).length == 1) ? '0' + date.getMinutes() :/**/ date.getMinutes();
         date = date.getDate() + '.' + (Number(date.getMonth()) + 1)  + '.' + date.getFullYear()  + ' ' + date.getHours()  + ':' + minutes;
         // начало записи
@@ -162,9 +167,9 @@ function displayPosts(posts) {
             '<div class="panel panel-default">' +
             '<div class="list-group">';
         // если имеется текст
-        if (posts[j].text.length > 0) {
+        if (post.text.length > 0 && isContent) {
             // заменяем ссылке в тексте на реальные, добавляем переносы строк
-            var text = posts[j].text
+            var text = post.text
                 .replace(reLink, function(s){
                     var str = (/:\/\//.exec(s) === null ? "http://" + s : s );  // CHECK
                     return '<a href="'+ str + '">' + s + '</a>';
@@ -176,15 +181,21 @@ function displayPosts(posts) {
                 '</p>'
         }
         // если имеются прикрепления
-        if (posts[j].attachments) {
+        if (post.attachments && isContent) {
             // списки с каждым типом прикреплений
             // TODO другие виды прикреплений
-            var listPhoto = posts[j].attachments.filter(function(attach) {
+            var listPhoto = post.attachments.filter(function(attach) {
                     return attach.type == 'photo'
                 }),
-                listAudio = posts[j].attachments.filter(function(attach) {
+                listAudio = post.attachments.filter(function(attach) {
                     return attach.type == 'audio'
                 });
+            //listVideo = post.attachments.filter(function(attach) {
+            //    return attach.type == 'video'
+            //});
+
+
+
             if (listPhoto.length > 0) {
                 console.log('Изображения: ', listPhoto);
                 // начало блока
@@ -222,23 +233,25 @@ function displayPosts(posts) {
         // конец записи
         code += '<p class="list-group-item">' +
             '<button title="Мне нравится" class="btn action" type="button" disabled="disabled">' +
-            'Мне нравится <span class="glyphicon glyphicon-heart" aria-hidden="true"></span> ' + posts[j].likes.count +
+            '<span class="glyphicon glyphicon-heart" aria-hidden="true"></span> ' + post.likes.count +
             '</button>' +
             '<button title="Поделиться" class="btn action" type="button" disabled="disabled">' +
-            '<span class="glyphicon glyphicon-bullhorn" aria-hidden="true"></span> ' + posts[j].reposts.count +
+            '<span class="glyphicon glyphicon-bullhorn" aria-hidden="true"></span> ' + post.reposts.count +
             '</button>' +
             '<button title="Скорость" class="btn action" type="button" disabled="disabled">' +
-            '<span class="glyphicon glyphicon-dashboard" aria-hidden="true"></span> ' + posts[j].speed +
+            '<span class="glyphicon glyphicon-dashboard" aria-hidden="true"></span> ' + post.speed +
             '</button>' +
+            '</p>' +
+            '<p class="list-group-item">' +
             '<span title="Дата создания записи" class="action">' + date + '</span>' +
-            '<a title="Открыть запись в новом окне" class="btn action" href="https://vk.com/wall' + posts[j].from_id + '_' + posts[j].id + '" target="_blank" role="button">' +
+            '<a title="Открыть запись в новом окне" class="btn action" href="https://vk.com/wall' + post.from_id + '_' + post.id + '" target="_blank" role="button">' +
             'Перейти к записи' +
             '</a>' +
             '</p>' +
             '</div>' +
             '</div>';
     }
-    $(tblPosts).append($( code ));
+    $(divPosts).append($( code ));
     // разблокировка кнопки выборки
     $(btnExec).val('Произвести выборку');
     $(btnExec).prop("disabled", false);
@@ -257,24 +270,27 @@ function isError(data) {
         var txtError = data.error['error_code'] + ' ' + data.error['error_msg'];
         alert('Произошла ошибка: ' + txtError);
         console.error(txtError, data);
+        // разблокировка кнопки выборки
+        $(btnExec).val('Произвести выборку');
+        $(btnExec).prop("disabled", false);
         return 1;
     }
     else {return 0}
 }
 
-function sortRevByLikes(a, b) {
+function sort_RevByLikes(a, b) {
     if (a.likes.count < b.likes.count) return 1;
     else if (a.likes.count > b.likes.count) return -1;
     else return 0;
 }
 
-function sortRevByReposts(a, b) {
+function sort_RevByReposts(a, b) {
     if (a.reposts.count < b.reposts.count) return 1;
     else if (a.reposts.count > b.reposts.count) return -1;
     else return 0;
 }
 
-function sortRevBySpeed(a, b) {
+function sort_RevBySpeed(a, b) {
     if (a.speed < b.speed) return 1;
     else if (a.speed > b.speed) return -1;
     else return 0;
