@@ -1,0 +1,39 @@
+.container {
+    margin-top: 5px;
+}
+.input-sm,.form-control, .btn {
+    height: 30px;
+}
+.form-group {
+    padding-right: 1px;
+    margin-bottom: 7px;
+}
+.action, .action:hover, .action:active, .action:focus {
+    color: #2F5879;
+    background-color: #fff;
+    padding: 3px 4px;
+}
+.post-link:hover, .post-link:active, .post-link:focus {
+    background-color: #E9EDF1;
+}
+.list-group-item {
+    padding: 5px 7px;
+}
+
+/*для изображений в постах*/
+.photo-block img{
+    display: block;
+    height: auto;
+    max-height: 60px;
+    max-width: 100%;
+}
+
+.photo-block .col-xs-2{
+    height: 60px;
+}
+
+#btnAddPosts {
+    margin-top: -5px;
+    margin-bottom: 10px;
+    display: none;
+}
